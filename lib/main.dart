@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_joystick/flutter_joystick.dart';
 import 'dart:async';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
-// import 'package:location/location.dart';
-// import 'package:location_permissions/location_permissions.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 
@@ -23,9 +21,10 @@ class JoystickExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Joystick Example'),
+          title: const Text('Hungry Hungry Hippos'),
         ),
         body: const MainPage(),
       ),
@@ -101,6 +100,7 @@ class _MainPageState extends State<MainPage> {
   void _disconnect() async {
     await _connection.cancel();
     _connected = false;
+    _logTexts = "Disconnected!";
     refreshScreen();
   }
 
@@ -111,21 +111,10 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _startScan() async {
-    // _permissionGranted = await location.hasPermission();
-    // print(_permissionGranted);
-    // if (_permissionGranted == PermissionStatus.denied) {
-    //   _permissionGranted = await location.requestPermission();
-    //   if (_permissionGranted != PermissionStatus.granted) {
-    //     return;
-    //   }
-    // }
     var status = await Permission.bluetooth.status;
 
-    if (status.isGranted) {
-      // print('Location permission is granted');
-      // scanForDevices();
-    } else {
-      // print('Location permission is not granted');
+    if (!status.isGranted) {
+      // request required permissions
       await [
         Permission.location,
         Permission.bluetooth,
@@ -136,7 +125,6 @@ class _MainPageState extends State<MainPage> {
 
       status = await Permission.location.status;
 
-      // scanForDevices();
     }
     _foundBleUARTDevices = [];
     _scanning = true;
@@ -149,13 +137,7 @@ class _MainPageState extends State<MainPage> {
         _logTexts = "Found device!";
         refreshScreen();
       }
-      // if (_foundBleUARTDevices.every((element) =>
-      // element.id != device.id)) {
-      //   _foundBleUARTDevices.add(device);
-      //   refreshScreen();
-      // }
     }, onError: (Object error) {
-      // print("ERROR while scanning:$error \n");
       _logTexts = "${_logTexts}ERROR while scanning:$error \n";
       refreshScreen();
     });
@@ -204,7 +186,6 @@ class _MainPageState extends State<MainPage> {
       }
       refreshScreen();
     }, onError: (Object error) {
-      // print("ERROR while connecting:$error \n");
       _logTexts = "${_logTexts}ERROR while connecting:$error \n";
       refreshScreen();
     });
@@ -215,6 +196,7 @@ class _MainPageState extends State<MainPage> {
       _stopScan();
       if (_foundBleUARTDevices.isNotEmpty) {
         onConnectDevice(_foundBleUARTDevices[0]);
+        _foundBleUARTDevices = [];
       }
     }
   }
@@ -235,6 +217,7 @@ class _MainPageState extends State<MainPage> {
               height: 90,
               child: Scrollbar(
                   child: SingleChildScrollView(child: Text(_logTexts)))),
+          const SizedBox(height: 10),
           Joystick(
             mode: JoystickMode.all,
             listener: (details) {
@@ -243,18 +226,6 @@ class _MainPageState extends State<MainPage> {
           ),
         ],
       )
-
-          // child: Stack(
-          //   children: [
-          //     Container(
-          //       color: Colors.green,
-          //     ),
-          //     Align(
-          //       alignment: const Alignment(0, 0.8),
-          //       child:
-          //     ),
-          //   ],
-          // ),
           ),
       persistentFooterButtons: [
         Container(
@@ -276,7 +247,7 @@ class _MainPageState extends State<MainPage> {
           onPressed: !_scanning && !_connected ? _startScan : () {},
           child: Icon(
             Icons.play_arrow,
-            color: !_scanning && !_connected ? Colors.blue : Colors.grey,
+            color: !_scanning && !_connected ? Colors.white : Colors.grey,
           ),
         ),
         ElevatedButton(
@@ -285,13 +256,13 @@ class _MainPageState extends State<MainPage> {
             },
             child: Icon(
               Icons.stop,
-              color: _scanning ? Colors.blue : Colors.grey,
+              color: _scanning ? Colors.white : Colors.grey,
             )),
         ElevatedButton(
             onPressed: _connected ? _disconnect : () {},
             child: Icon(
               Icons.cancel,
-              color: _connected ? Colors.blue : Colors.grey,
+              color: _connected ? Colors.white : Colors.grey,
             ))
       ],
     );
