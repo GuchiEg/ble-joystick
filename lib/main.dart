@@ -80,8 +80,6 @@ class _MainPageState extends State<MainPage> {
     double w = (1 - y.abs()) * (x) + x;
     double rightMotor = -(v + w) / 2;
     double leftMotor = -(v - w) / 2;
-    print(leftMotor);
-    print(rightMotor);
     int motorControl = 0;
 
     // LEFT MOTOR A
@@ -91,7 +89,7 @@ class _MainPageState extends State<MainPage> {
     } 
     if (rightMotor < 0) {
       motorControl = motorControl + 2;
-      leftMotor = rightMotor.abs();
+      rightMotor = rightMotor.abs();
     }
     int motorA = (leftMotor * 255).toInt();
     int motorB = (rightMotor * 255).toInt();
@@ -124,10 +122,10 @@ class _MainPageState extends State<MainPage> {
     var status = await Permission.bluetooth.status;
 
     if (status.isGranted) {
-      print('Location permission is granted');
+      // print('Location permission is granted');
       // scanForDevices();
     } else {
-      print('Location permission is not granted');
+      // print('Location permission is not granted');
       await [
         Permission.location,
         Permission.bluetooth,
@@ -138,8 +136,6 @@ class _MainPageState extends State<MainPage> {
 
       status = await Permission.location.status;
 
-      print(status.isGranted);
-
       // scanForDevices();
     }
     _foundBleUARTDevices = [];
@@ -148,14 +144,18 @@ class _MainPageState extends State<MainPage> {
     _scanStream = flutterReactiveBle
         .scanForDevices(withServices: [_ESP32_UUID]).listen((device) {
       // connect here
-      onConnectDevice(device);
+      if (_foundBleUARTDevices.every((element) => element.id != device.id)) {
+        _foundBleUARTDevices.add(device);
+        _logTexts = "Found device!";
+        refreshScreen();
+      }
       // if (_foundBleUARTDevices.every((element) =>
       // element.id != device.id)) {
       //   _foundBleUARTDevices.add(device);
       //   refreshScreen();
       // }
     }, onError: (Object error) {
-      print("ERROR while scanning:$error \n");
+      // print("ERROR while scanning:$error \n");
       _logTexts = "${_logTexts}ERROR while scanning:$error \n";
       refreshScreen();
     });
@@ -204,10 +204,19 @@ class _MainPageState extends State<MainPage> {
       }
       refreshScreen();
     }, onError: (Object error) {
-      print("ERROR while connecting:$error \n");
+      // print("ERROR while connecting:$error \n");
       _logTexts = "${_logTexts}ERROR while connecting:$error \n";
       refreshScreen();
     });
+  }
+
+  void connectToDevice() {
+    if (_scanning) {
+      _stopScan();
+      if (_foundBleUARTDevices.isNotEmpty) {
+        onConnectDevice(_foundBleUARTDevices[0]);
+      }
+    }
   }
 
   @override
@@ -271,7 +280,9 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
         ElevatedButton(
-            onPressed: _scanning ? _stopScan : () {},
+            onPressed: () => {
+              connectToDevice()
+            },
             child: Icon(
               Icons.stop,
               color: _scanning ? Colors.blue : Colors.grey,
